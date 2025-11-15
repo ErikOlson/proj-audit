@@ -3,7 +3,7 @@ package render
 import (
 	"io"
 
-	"github.com/your-username/proj-audit/internal/model"
+	"github.com/ErikOlson/proj-audit/internal/model"
 )
 
 type Renderer interface {

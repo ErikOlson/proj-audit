@@ -1,3 +1,3 @@
-module github.com/your-username/proj-audit
+module github.com/ErikOlson/proj-audit
 
 go 1.22

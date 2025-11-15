@@ -198,7 +198,7 @@ proj-audit/
 1. Rename the module in `go.mod` to your real path, e.g.:
 
    ```go
-   module github.com/your-username/proj-audit
+   module github.com/ErikOlson/proj-audit
 
    go 1.22
    ```

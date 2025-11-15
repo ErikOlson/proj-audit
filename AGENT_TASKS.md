@@ -122,7 +122,7 @@ Define a `Scanner` interface and implement a `DefaultScanner`:
 ```go
 package scan
 
-import "github.com/your-username/proj-audit/internal/model"
+import "github.com/ErikOlson/proj-audit/internal/model"
 
 type Scanner interface {
     Scan(root string, maxDepth int) (*model.Node, error)
@@ -175,7 +175,7 @@ Define:
 ```go
 package analyze
 
-import "github.com/your-username/proj-audit/internal/model"
+import "github.com/ErikOlson/proj-audit/internal/model"
 
 type Analyzer interface {
     Analyze(path string) (model.ProjectMetrics, error)
@@ -299,7 +299,7 @@ package score
 import (
     "time"
 
-    "github.com/your-username/proj-audit/internal/model"
+    "github.com/ErikOlson/proj-audit/internal/model"
 )
 
 type Scorer interface {
@@ -371,7 +371,7 @@ import (
     "io"
     "time"
 
-    "github.com/your-username/proj-audit/internal/model"
+    "github.com/ErikOlson/proj-audit/internal/model"
 )
 
 type TreeRenderer struct{}

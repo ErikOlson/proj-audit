@@ -6,10 +6,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/your-username/proj-audit/internal/analyze"
-	"github.com/your-username/proj-audit/internal/render"
-	"github.com/your-username/proj-audit/internal/scan"
-	"github.com/your-username/proj-audit/internal/score"
+	"github.com/ErikOlson/proj-audit/internal/analyze"
+	"github.com/ErikOlson/proj-audit/internal/render"
+	"github.com/ErikOlson/proj-audit/internal/scan"
+	"github.com/ErikOlson/proj-audit/internal/score"
 )
 
 func main() {
@@ -57,6 +57,29 @@ func main() {
 // annotateTree is a placeholder; the agent should move this into an appropriate package
 // or keep it here if that remains simplest.
 func annotateTree(root *scan.Node, analyzer analyze.Analyzer, scorer score.Scorer) error {
-	// This will be implemented by the coding agent according to AGENT_TASKS.md.
-	return nil
+	if root == nil {
+		return nil
+	}
+
+	var visit func(node *scan.Node) error
+	visit = func(node *scan.Node) error {
+		if node.Project != nil && analyzer != nil && scorer != nil {
+			metrics, err := analyzer.Analyze(node.Path)
+			if err != nil {
+				return err
+			}
+			node.Project.Metrics = metrics
+			scores := scorer.Score(metrics)
+			node.Project.Scores = scores
+			node.Project.Category = scorer.Categorize(scores, metrics)
+		}
+		for _, child := range node.Children {
+			if err := visit(child); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	return visit(root)
 }
