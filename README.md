@@ -1,5 +1,7 @@
-# proj-audit
+# proj-audit  
 
+In this day and age, it's easy to whip things up and tinker on a bunch of prototypes. Sometimes a person needs help remembering which projects/directories were important.  
+  
 `proj-audit` is a small CLI tool that scans a directory (for example your `~/dev` folder), discovers software projects, and gives each one a rough **“significance”** score based on:
 
 - Effort (commits, time span, size)
@@ -29,43 +31,36 @@ The intent is to help you triage:
 - Which to **polish and showcase**
 
 
-## High-level goals (v0)
+## Build
 
-- CLI tool written in **Go** (Go 1.22+).
-- Run from any directory; default root is `.`.
-- Detect directories that “look like projects” using simple heuristics:
-  - `.git` directory present, **or**
-  - Known manifest files (`go.mod`, `Cargo.toml`, `package.json`, etc.).
-- For each detected project, compute basic metrics:
-  - Git metrics (if git repo):
-    - commit count
-    - active span (first → last commit in days)
-    - last commit timestamp
-  - Filesystem metrics:
-    - file count
-    - rough lines-of-code (by extension)
-    - languages (by extension)
-    - presence of:
-      - `README*`
-      - tests
-      - CI config
-      - Docker-related files
-  - Recency:
-    - last modified time of files (fallback if no git)
-- Compute simple scores:
-  - `Effort`
-  - `Polish`
-  - `Recency`
-  - `Overall` (combined)
-- Categorize each project:
-  - `Experiment`, `Prototype`, `Serious`, `Product-ish`, `Archived` (labels can be tuned).
-- Render a **tree view** with project summary inline.
-- Optionally render **JSON** or **Markdown** instead of tree.
+```bash
+make build
+```
 
-This is intended to be extensible via **interfaces** (Scanner, Analyzer, Scorer, Renderer).
+This compiles the CLI to `./bin/proj-audit`. Use `make run` for the default invocation or run the binary directly as shown below.
 
 
-## CLI usage (desired)
+## CLI Usage
+
+### Example: tree output (default)
+
+```bash
+./bin/proj-audit --root ~/dev --format tree
+```
+
+```text
+~/dev
+├── event-notification-service   [Serious: 82 | Go | 137 commits | last: 2024-11]
+├── wavekit-browser              [Product-ish: 76 | JS,Go | 85 commits | last: 2024-08]
+├── experiments
+│   ├── go-spike-1               [Experiment: 18 | Go | 4 commits]
+│   └── rust-prototype           [Prototype: 24 | Rust | no git]
+└── old-stuff
+    ├── java-lab                 [Archived: 29 | Java | 22 commits | last: 2019-06]
+    └── random-notes             [no project detected]
+```
+
+### Other commands
 
 Basic:
 
@@ -192,27 +187,3 @@ proj-audit/
 └── AGENT_TASKS.md
 ```
 
-
-## Getting started
-
-1. Rename the module in `go.mod` to your real path, e.g.:
-
-   ```go
-   module github.com/ErikOlson/proj-audit
-
-   go 1.22
-   ```
-
-2. Build the CLI:
-
-   ```bash
-   make build
-   ```
-
-3. Run it against a directory:
-
-   ```bash
-   ./bin/proj-audit --root ~/dev --format tree
-   ```
-
-4. Use `AGENT_TASKS.md` as guidance for a coding agent (like Codex) to flesh out the implementation.
