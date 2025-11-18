@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/ErikOlson/proj-audit/internal/model"
 )
@@ -27,6 +28,7 @@ func NewDefaultScanner() *DefaultScanner {
 			"node_modules": {},
 			"vendor":       {},
 			"bin":          {},
+			"target":       {},
 			".gocache":     {},
 			".cache":       {},
 			"dist":         {},
@@ -109,6 +111,12 @@ func (s *DefaultScanner) scanDir(path string, depth, maxDepth int) (*model.Node,
 }
 
 func (s *DefaultScanner) shouldIgnore(name string) bool {
+	if name == "" {
+		return false
+	}
+	if strings.HasPrefix(name, ".") && name != ".git" && name != ".github" {
+		return true
+	}
 	_, ok := s.ignoreDirs[name]
 	return ok
 }

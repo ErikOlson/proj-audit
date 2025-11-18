@@ -23,6 +23,7 @@ func NewFsAnalyzer() *FsAnalyzer {
 			"node_modules": {},
 			"vendor":       {},
 			"bin":          {},
+			"target":       {},
 			".gocache":     {},
 			".cache":       {},
 			"dist":         {},
@@ -31,6 +32,7 @@ func NewFsAnalyzer() *FsAnalyzer {
 			"venv":         {},
 			".venv":        {},
 			"__pycache__":  {},
+			".cargo":       {},
 		},
 	}
 }
@@ -98,6 +100,12 @@ func (f *FsAnalyzer) Analyze(path string) (model.ProjectMetrics, error) {
 }
 
 func (f *FsAnalyzer) shouldSkipDir(name string) bool {
+	if name == "" {
+		return false
+	}
+	if strings.HasPrefix(name, ".") && name != ".git" && name != ".github" {
+		return true
+	}
 	_, skip := f.ignoreDirs[name]
 	return skip
 }

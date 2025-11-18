@@ -20,6 +20,7 @@ func NewLangAnalyzer() *LangAnalyzer {
 			"node_modules": {},
 			"vendor":       {},
 			"bin":          {},
+			"target":       {},
 			".gocache":     {},
 			".cache":       {},
 			"dist":         {},
@@ -28,6 +29,7 @@ func NewLangAnalyzer() *LangAnalyzer {
 			"venv":         {},
 			".venv":        {},
 			"__pycache__":  {},
+			".cargo":       {},
 		},
 	}
 }
@@ -71,6 +73,12 @@ func (l *LangAnalyzer) Analyze(path string) (model.ProjectMetrics, error) {
 }
 
 func (l *LangAnalyzer) shouldSkipDir(name string) bool {
+	if name == "" {
+		return false
+	}
+	if strings.HasPrefix(name, ".") && name != ".git" && name != ".github" {
+		return true
+	}
 	_, skip := l.ignoreDirs[name]
 	return skip
 }
