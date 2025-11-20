@@ -114,6 +114,12 @@ CLI flags (v0):
   "format": "markdown",
   "ignoreDirs": ["tmp", "notes"],
   "languagesFile": "./languages.yaml",
+  "scoring": {
+    "polish": { "readme": 3, "tests": 4, "ci": 4, "docker": 1 },
+    "categories": {
+      "product": { "polishMin": 10, "effortMin": 12 }
+    }
+  },
   "analyzers": {
     "git": true,
     "fs": true,
@@ -126,6 +132,7 @@ Key points:
 
 - `ignoreDirs` entries are merged with the built-in list and affect the scanner and analyzers.
 - `languagesFile` points at a YAML document (see below) for language-specific rules. You can also add a small `languages` block inline if you prefer JSON.
+- `scoring` lets you tweak the effort/polish/recency weights and the thresholds that map a project to “Experiment”, “Prototype”, etc.
 - `analyzers` lets you enable/disable the built-in analyzer components (git, filesystem, language). CLI flags like `--disable-analyzers git,lang` override whatever the config specifies.
 - CLI flags always win over config values, so `proj-audit --format json` overrides whatever the file specifies.
 
@@ -155,6 +162,32 @@ Rust:
 ```
 
 Use `proj-audit --languages ./languages.yaml` or set `languagesFile` in your JSON config to load the file. Entries merge with the defaults embedded in `internal/config/languages.yaml`, so you only need to add new languages or override specific ones.
+
+### Scoring configuration
+
+All scoring knobs live under the `scoring` key. Effort thresholds take the first matching rule (ordered high → low). Recency rules award points if the project was touched within a number of days. Category rules describe bounds on commits/effort/polish/recency that must match for a project to qualify.
+
+```json
+"scoring": {
+  "effort": {
+    "commit": [
+      { "min": 200, "points": 20 },
+      { "min": 20, "points": 10 }
+    ],
+    "active": [
+      { "min": 30, "points": 5 },
+      { "min": 7, "points": 3 }
+    ]
+  },
+  "recency": [
+    { "maxDays": 90, "points": 6 },
+    { "maxDays": 365, "points": 3 }
+  ],
+  "categories": {
+    "product": { "polishMin": 10, "effortMin": 12 }
+  }
+}
+```
 
 
 ## Architecture

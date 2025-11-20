@@ -22,6 +22,7 @@ type Config struct {
 	LanguagesFile string                    `json:"languagesFile"`
 	Languages     map[string]LanguageConfig `json:"languages"`
 	Analyzers     map[string]bool           `json:"analyzers"`
+	Scoring       *ScoringConfig            `json:"scoring"`
 }
 
 func DefaultConfig() Config {
@@ -32,6 +33,7 @@ func DefaultConfig() Config {
 		IgnoreDirs: defaultIgnoreDirs(),
 		Languages:  defaultLanguages(),
 		Analyzers:  defaultAnalyzerToggles(),
+		Scoring:    DefaultScoringConfig(),
 	}
 }
 
@@ -78,6 +80,9 @@ func Merge(base Config, overrides Config) Config {
 		for name, enabled := range overrides.Analyzers {
 			merged.Analyzers[strings.ToLower(name)] = enabled
 		}
+	}
+	if overrides.Scoring != nil {
+		merged.Scoring = overrides.Scoring
 	}
 	return merged
 }
@@ -156,6 +161,52 @@ func defaultAnalyzerToggles() map[string]bool {
 		"fs":   true,
 		"lang": true,
 	}
+}
+
+type ScoringConfig struct {
+	Effort     EffortConfig   `json:"effort"`
+	Polish     PolishConfig   `json:"polish"`
+	Recency    []AgeThreshold `json:"recency"`
+	Categories CategoryConfig `json:"categories"`
+}
+
+type EffortConfig struct {
+	Commit []RangeThreshold `json:"commit"`
+	Active []RangeThreshold `json:"active"`
+}
+
+type PolishConfig struct {
+	Readme int `json:"readme"`
+	Tests  int `json:"tests"`
+	CI     int `json:"ci"`
+	Docker int `json:"docker"`
+}
+
+type RangeThreshold struct {
+	Min    int `json:"min"`
+	Points int `json:"points"`
+}
+
+type AgeThreshold struct {
+	MaxDays int `json:"maxDays"`
+	Points  int `json:"points"`
+}
+
+type CategoryConfig struct {
+	Experiment CategoryRule `json:"experiment"`
+	Prototype  CategoryRule `json:"prototype"`
+	Archived   CategoryRule `json:"archived"`
+	Product    CategoryRule `json:"product"`
+}
+
+type CategoryRule struct {
+	CommitMax  *int `json:"commitMax"`
+	EffortMax  *int `json:"effortMax"`
+	EffortMin  *int `json:"effortMin"`
+	PolishMax  *int `json:"polishMax"`
+	PolishMin  *int `json:"polishMin"`
+	RecencyMax *int `json:"recencyMax"`
+	RecencyMin *int `json:"recencyMin"`
 }
 
 func appendUnique(base []string, more []string) []string {

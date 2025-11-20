@@ -4,13 +4,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ErikOlson/proj-audit/internal/config"
 	"github.com/ErikOlson/proj-audit/internal/model"
 )
 
 func TestDefaultScorerCategorize(t *testing.T) {
 	now := time.Date(2024, time.January, 15, 0, 0, 0, 0, time.UTC)
 
-	scorer := NewDefaultScorer()
+	scorer := NewDefaultScorer(config.DefaultScoringConfig())
 	scorer.Now = func() time.Time { return now }
 
 	tests := []struct {

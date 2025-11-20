@@ -90,7 +90,7 @@ func main() {
 		log.Fatalf("no analyzers enabled; enable at least one")
 	}
 	analyzer := analyze.NewCompositeAnalyzer(analyzersList...)
-	scorer := score.NewDefaultScorer()
+	scorer := score.NewDefaultScorer(cfg.Scoring)
 
 	if err := annotateTree(tree, analyzer, scorer); err != nil {
 		log.Fatalf("annotate error: %v", err)

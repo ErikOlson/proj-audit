@@ -3,6 +3,7 @@ package score
 import (
 	"time"
 
+	"github.com/ErikOlson/proj-audit/internal/config"
 	"github.com/ErikOlson/proj-audit/internal/model"
 )
 
@@ -12,62 +13,46 @@ type Scorer interface {
 }
 
 type DefaultScorer struct {
-	Now func() time.Time
+	Now    func() time.Time
+	config *config.ScoringConfig
 }
 
-func NewDefaultScorer() *DefaultScorer {
+func NewDefaultScorer(cfg *config.ScoringConfig) *DefaultScorer {
+	if cfg == nil {
+		cfg = config.DefaultScoringConfig()
+	}
 	return &DefaultScorer{
-		Now: time.Now,
+		Now:    time.Now,
+		config: cfg,
 	}
 }
 
 func (s *DefaultScorer) Score(m model.ProjectMetrics) model.ProjectScores {
 	var scores model.ProjectScores
 
-	// Effort from commit count.
-	switch {
-	case m.CommitCount >= 100:
-		scores.Effort += 15
-	case m.CommitCount >= 20:
-		scores.Effort += 10
-	case m.CommitCount >= 5:
-		scores.Effort += 5
-	case m.CommitCount >= 1:
-		scores.Effort += 2
+	if len(s.config.Effort.Commit) > 0 {
+		scores.Effort += pickRangePoints(m.CommitCount, s.config.Effort.Commit)
+	}
+	if len(s.config.Effort.Active) > 0 {
+		scores.Effort += pickRangePoints(m.ActiveDays, s.config.Effort.Active)
 	}
 
-	// Active span contribution.
-	switch {
-	case m.ActiveDays >= 31:
-		scores.Effort += 6
-	case m.ActiveDays >= 8:
-		scores.Effort += 4
-	case m.ActiveDays >= 2:
-		scores.Effort += 2
-	}
-
-	// Polish indicators.
 	if m.HasREADME {
-		scores.Polish += 2
+		scores.Polish += s.config.Polish.Readme
 	}
 	if m.HasTests {
-		scores.Polish += 3
+		scores.Polish += s.config.Polish.Tests
 	}
 	if m.HasCI {
-		scores.Polish += 3
+		scores.Polish += s.config.Polish.CI
 	}
 	if m.HasDocker {
-		scores.Polish += 2
+		scores.Polish += s.config.Polish.Docker
 	}
 
-	// Recency weighting.
-	if !m.LastTouched.IsZero() {
-		age := s.Now().Sub(m.LastTouched)
-		if age <= 180*24*time.Hour {
-			scores.Recency += 5
-		} else if age <= 730*24*time.Hour {
-			scores.Recency += 3
-		}
+	if !m.LastTouched.IsZero() && len(s.config.Recency) > 0 {
+		ageDays := int(s.Now().Sub(m.LastTouched).Hours() / 24)
+		scores.Recency += pickRecencyPoints(ageDays, s.config.Recency)
 	}
 
 	scores.Overall = scores.Effort + scores.Polish + scores.Recency
@@ -75,16 +60,60 @@ func (s *DefaultScorer) Score(m model.ProjectMetrics) model.ProjectScores {
 }
 
 func (s *DefaultScorer) Categorize(scores model.ProjectScores, m model.ProjectMetrics) string {
+	cfg := s.config.Categories
 	switch {
-	case m.CommitCount < 5 && scores.Effort < 5 && scores.Polish < 3:
+	case matchesRule(cfg.Experiment, scores, m):
 		return "Experiment"
-	case m.CommitCount < 20 && scores.Effort < 10:
+	case matchesRule(cfg.Prototype, scores, m):
 		return "Prototype"
-	case scores.Recency == 0 && scores.Effort >= 10:
+	case matchesRule(cfg.Archived, scores, m):
 		return "Archived"
-	case scores.Polish >= 8 && scores.Effort >= 10:
+	case matchesRule(cfg.Product, scores, m):
 		return "Product-ish"
 	default:
 		return "Serious"
 	}
+}
+
+func pickRangePoints(value int, thresholds []config.RangeThreshold) int {
+	for _, th := range thresholds {
+		if value >= th.Min {
+			return th.Points
+		}
+	}
+	return 0
+}
+
+func pickRecencyPoints(ageDays int, thresholds []config.AgeThreshold) int {
+	for _, th := range thresholds {
+		if ageDays <= th.MaxDays {
+			return th.Points
+		}
+	}
+	return 0
+}
+
+func matchesRule(rule config.CategoryRule, scores model.ProjectScores, m model.ProjectMetrics) bool {
+	if rule.CommitMax != nil && m.CommitCount > *rule.CommitMax {
+		return false
+	}
+	if rule.EffortMax != nil && scores.Effort > *rule.EffortMax {
+		return false
+	}
+	if rule.EffortMin != nil && scores.Effort < *rule.EffortMin {
+		return false
+	}
+	if rule.PolishMax != nil && scores.Polish > *rule.PolishMax {
+		return false
+	}
+	if rule.PolishMin != nil && scores.Polish < *rule.PolishMin {
+		return false
+	}
+	if rule.RecencyMax != nil && scores.Recency > *rule.RecencyMax {
+		return false
+	}
+	if rule.RecencyMin != nil && scores.Recency < *rule.RecencyMin {
+		return false
+	}
+	return true
 }
