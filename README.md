@@ -95,6 +95,8 @@ CLI flags (v0):
   Include dot-prefixed directories instead of skipping them.
 - `--languages` (string)  
   Path to a YAML file describing languages, extensions, and directories to skip.
+- `--disable-analyzers` (string)  
+  Comma-separated list of analyzers to disable (`git`, `fs`, `lang`).
 - `--config` (string)  
   Path to a JSON config file for advanced customization.
 
@@ -111,7 +113,12 @@ CLI flags (v0):
   "maxDepth": 3,
   "format": "markdown",
   "ignoreDirs": ["tmp", "notes"],
-  "languagesFile": "./languages.yaml"
+  "languagesFile": "./languages.yaml",
+  "analyzers": {
+    "git": true,
+    "fs": true,
+    "lang": false
+  }
 }
 ```
 
@@ -119,6 +126,7 @@ Key points:
 
 - `ignoreDirs` entries are merged with the built-in list and affect the scanner and analyzers.
 - `languagesFile` points at a YAML document (see below) for language-specific rules. You can also add a small `languages` block inline if you prefer JSON.
+- `analyzers` lets you enable/disable the built-in analyzer components (git, filesystem, language). CLI flags like `--disable-analyzers git,lang` override whatever the config specifies.
 - CLI flags always win over config values, so `proj-audit --format json` overrides whatever the file specifies.
 
 ### Language config (YAML)

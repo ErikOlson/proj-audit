@@ -21,6 +21,7 @@ type Config struct {
 	IncludeHidden bool                      `json:"includeHidden"`
 	LanguagesFile string                    `json:"languagesFile"`
 	Languages     map[string]LanguageConfig `json:"languages"`
+	Analyzers     map[string]bool           `json:"analyzers"`
 }
 
 func DefaultConfig() Config {
@@ -30,6 +31,7 @@ func DefaultConfig() Config {
 		Format:     "tree",
 		IgnoreDirs: defaultIgnoreDirs(),
 		Languages:  defaultLanguages(),
+		Analyzers:  defaultAnalyzerToggles(),
 	}
 }
 
@@ -68,6 +70,14 @@ func Merge(base Config, overrides Config) Config {
 	}
 	if len(overrides.Languages) > 0 {
 		merged.Languages = MergeLanguageMaps(merged.Languages, overrides.Languages)
+	}
+	if overrides.Analyzers != nil {
+		if merged.Analyzers == nil {
+			merged.Analyzers = make(map[string]bool)
+		}
+		for name, enabled := range overrides.Analyzers {
+			merged.Analyzers[strings.ToLower(name)] = enabled
+		}
 	}
 	return merged
 }
@@ -127,6 +137,25 @@ func (c Config) ResolveLanguages() (map[string]LanguageConfig, error) {
 		langs = MergeLanguageMaps(langs, c.Languages)
 	}
 	return langs, nil
+}
+
+func (c Config) EffectiveAnalyzers() map[string]bool {
+	toggles := defaultAnalyzerToggles()
+	for name, enabled := range c.Analyzers {
+		if name == "" {
+			continue
+		}
+		toggles[strings.ToLower(name)] = enabled
+	}
+	return toggles
+}
+
+func defaultAnalyzerToggles() map[string]bool {
+	return map[string]bool{
+		"git":  true,
+		"fs":   true,
+		"lang": true,
+	}
 }
 
 func appendUnique(base []string, more []string) []string {

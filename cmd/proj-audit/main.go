@@ -22,6 +22,7 @@ func main() {
 	ignoreFlag := flag.String("ignore", "", "comma-separated directories to ignore (appended to config)")
 	includeHidden := flag.Bool("include-hidden", false, "include dot-prefixed directories")
 	languagesFile := flag.String("languages", "", "path to a languages YAML file")
+	disableAnalyzers := flag.String("disable-analyzers", "", "comma-separated analyzers to disable (git,fs,lang)")
 	flag.Parse()
 
 	cfg := config.DefaultConfig()
@@ -58,6 +59,13 @@ func main() {
 		log.Fatalf("load languages: %v", err)
 	}
 	cfg.Languages = langs
+	if cfg.Analyzers == nil {
+		cfg.Analyzers = make(map[string]bool)
+	}
+	for _, name := range parseList(*disableAnalyzers) {
+		cfg.Analyzers[strings.ToLower(name)] = false
+	}
+	analyzerToggles := cfg.EffectiveAnalyzers()
 
 	ignoreDirs := cfg.AllIgnoreDirs()
 
@@ -68,10 +76,20 @@ func main() {
 		log.Fatalf("scan error: %v", err)
 	}
 
-	gitAnalyzer := analyze.NewGitAnalyzer()
-	fsAnalyzer := analyze.NewFsAnalyzer(ignoreDirs, cfg.IncludeHidden)
-	langAnalyzer := analyze.NewLangAnalyzer(ignoreDirs, cfg.IncludeHidden, cfg.ExtensionMapping())
-	analyzer := analyze.NewCompositeAnalyzer(gitAnalyzer, fsAnalyzer, langAnalyzer)
+	var analyzersList []analyze.Analyzer
+	if analyzerToggles["git"] {
+		analyzersList = append(analyzersList, analyze.NewGitAnalyzer())
+	}
+	if analyzerToggles["fs"] {
+		analyzersList = append(analyzersList, analyze.NewFsAnalyzer(ignoreDirs, cfg.IncludeHidden))
+	}
+	if analyzerToggles["lang"] {
+		analyzersList = append(analyzersList, analyze.NewLangAnalyzer(ignoreDirs, cfg.IncludeHidden, cfg.ExtensionMapping()))
+	}
+	if len(analyzersList) == 0 {
+		log.Fatalf("no analyzers enabled; enable at least one")
+	}
+	analyzer := analyze.NewCompositeAnalyzer(analyzersList...)
 	scorer := score.NewDefaultScorer()
 
 	if err := annotateTree(tree, analyzer, scorer); err != nil {
