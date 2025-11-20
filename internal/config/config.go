@@ -156,11 +156,11 @@ func (c Config) EffectiveAnalyzers() map[string]bool {
 }
 
 func defaultAnalyzerToggles() map[string]bool {
-	return map[string]bool{
-		"git":  true,
-		"fs":   true,
-		"lang": true,
+	var toggles map[string]bool
+	if err := decodeYAML(defaultAnalyzersYAML, &toggles); err != nil {
+		panic(fmt.Sprintf("invalid default analyzers yaml: %v", err))
 	}
+	return toggles
 }
 
 type ScoringConfig struct {
@@ -207,6 +207,47 @@ type CategoryRule struct {
 	PolishMin  *int `json:"polishMin"`
 	RecencyMax *int `json:"recencyMax"`
 	RecencyMin *int `json:"recencyMin"`
+}
+
+func defaultLanguages() map[string]LanguageConfig {
+	var langs map[string]LanguageConfig
+	if err := decodeYAML(defaultLanguagesYAML, &langs); err != nil {
+		panic(fmt.Sprintf("invalid default languages yaml: %v", err))
+	}
+	return langs
+}
+
+func LoadLanguagesFile(path string) (map[string]LanguageConfig, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read languages file: %w", err)
+	}
+	var langs map[string]LanguageConfig
+	if err := decodeYAML(data, &langs); err != nil {
+		return nil, err
+	}
+	return langs, nil
+}
+
+func MergeLanguageMaps(base, overrides map[string]LanguageConfig) map[string]LanguageConfig {
+	if base == nil && overrides == nil {
+		return nil
+	}
+	result := make(map[string]LanguageConfig)
+	for name, lang := range base {
+		result[name] = lang
+	}
+	for name, lang := range overrides {
+		if existing, ok := result[name]; ok {
+			result[name] = LanguageConfig{
+				Extensions: appendUnique(existing.Extensions, lang.Extensions),
+				SkipDirs:   appendUnique(existing.SkipDirs, lang.SkipDirs),
+			}
+		} else {
+			result[name] = lang
+		}
+	}
+	return result
 }
 
 func appendUnique(base []string, more []string) []string {

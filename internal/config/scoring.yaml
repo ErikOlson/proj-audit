@@ -1,0 +1,41 @@
+effort:
+  commit:
+    - min: 100
+      points: 15
+    - min: 20
+      points: 10
+    - min: 5
+      points: 5
+    - min: 1
+      points: 2
+  active:
+    - min: 31
+      points: 6
+    - min: 8
+      points: 4
+    - min: 2
+      points: 2
+polish:
+  readme: 2
+  tests: 3
+  ci: 3
+  docker: 2
+recency:
+  - maxDays: 180
+    points: 5
+  - maxDays: 730
+    points: 3
+categories:
+  experiment:
+    commitMax: 4
+    effortMax: 4
+    polishMax: 2
+  prototype:
+    commitMax: 19
+    effortMax: 9
+  archived:
+    recencyMax: 0
+    effortMin: 10
+  product:
+    polishMin: 8
+    effortMin: 10
