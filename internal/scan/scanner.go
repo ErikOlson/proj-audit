@@ -18,26 +18,14 @@ type Scanner interface {
 }
 
 type DefaultScanner struct {
-	ignoreDirs map[string]struct{}
+	ignoreDirs    map[string]struct{}
+	includeHidden bool
 }
 
-func NewDefaultScanner() *DefaultScanner {
+func NewDefaultScanner(ignoreDirs []string, includeHidden bool) *DefaultScanner {
 	return &DefaultScanner{
-		ignoreDirs: map[string]struct{}{
-			".git":         {},
-			"node_modules": {},
-			"vendor":       {},
-			"bin":          {},
-			"target":       {},
-			".gocache":     {},
-			".cache":       {},
-			"dist":         {},
-			"build":        {},
-			"out":          {},
-			"venv":         {},
-			".venv":        {},
-			"__pycache__":  {},
-		},
+		ignoreDirs:    toSet(ignoreDirs),
+		includeHidden: includeHidden,
 	}
 }
 
@@ -114,7 +102,7 @@ func (s *DefaultScanner) shouldIgnore(name string) bool {
 	if name == "" {
 		return false
 	}
-	if strings.HasPrefix(name, ".") && name != ".git" && name != ".github" {
+	if !s.includeHidden && strings.HasPrefix(name, ".") && name != ".git" && name != ".github" {
 		return true
 	}
 	_, ok := s.ignoreDirs[name]
@@ -148,4 +136,16 @@ func isProjectDir(path string, entries []fs.DirEntry) bool {
 	}
 
 	return hasGit || hasManifest
+}
+
+func toSet(items []string) map[string]struct{} {
+	set := make(map[string]struct{})
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		set[item] = struct{}{}
+	}
+	return set
 }

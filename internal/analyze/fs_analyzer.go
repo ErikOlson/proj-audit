@@ -13,27 +13,14 @@ import (
 )
 
 type FsAnalyzer struct {
-	ignoreDirs map[string]struct{}
+	ignoreDirs    map[string]struct{}
+	includeHidden bool
 }
 
-func NewFsAnalyzer() *FsAnalyzer {
+func NewFsAnalyzer(ignoreDirs []string, includeHidden bool) *FsAnalyzer {
 	return &FsAnalyzer{
-		ignoreDirs: map[string]struct{}{
-			".git":         {},
-			"node_modules": {},
-			"vendor":       {},
-			"bin":          {},
-			"target":       {},
-			".gocache":     {},
-			".cache":       {},
-			"dist":         {},
-			"build":        {},
-			"out":          {},
-			"venv":         {},
-			".venv":        {},
-			"__pycache__":  {},
-			".cargo":       {},
-		},
+		ignoreDirs:    makeIgnoreSet(ignoreDirs),
+		includeHidden: includeHidden,
 	}
 }
 
@@ -103,7 +90,7 @@ func (f *FsAnalyzer) shouldSkipDir(name string) bool {
 	if name == "" {
 		return false
 	}
-	if strings.HasPrefix(name, ".") && name != ".git" && name != ".github" {
+	if !f.includeHidden && strings.HasPrefix(name, ".") && name != ".git" && name != ".github" {
 		return true
 	}
 	_, skip := f.ignoreDirs[name]

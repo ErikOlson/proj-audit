@@ -24,7 +24,8 @@ func TestDefaultScannerDetectsProjects(t *testing.T) {
 		t.Fatalf("write go.mod: %v", err)
 	}
 
-	scanner := NewDefaultScanner()
+	ignoreDirs := []string{".git", "node_modules", "vendor"}
+	scanner := NewDefaultScanner(ignoreDirs, false)
 	tree, err := scanner.Scan(root, 0)
 	if err != nil {
 		t.Fatalf("Scan returned error: %v", err)

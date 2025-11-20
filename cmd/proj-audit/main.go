@@ -5,30 +5,62 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/ErikOlson/proj-audit/internal/analyze"
+	"github.com/ErikOlson/proj-audit/internal/config"
 	"github.com/ErikOlson/proj-audit/internal/render"
 	"github.com/ErikOlson/proj-audit/internal/scan"
 	"github.com/ErikOlson/proj-audit/internal/score"
 )
 
 func main() {
-	root := flag.String("root", ".", "root directory to scan")
-	maxDepth := flag.Int("max-depth", 0, "maximum directory depth to scan (0 = unlimited)")
-	format := flag.String("format", "tree", "output format: tree|markdown|json")
+	rootFlag := flag.String("root", "", "root directory to scan (default: config or current directory)")
+	maxDepthFlag := flag.Int("max-depth", -1, "maximum directory depth to scan (-1 = use config, 0 = unlimited)")
+	formatFlag := flag.String("format", "", "output format: tree|markdown|json (default from config)")
+	configPath := flag.String("config", "", "path to JSON config file")
+	ignoreFlag := flag.String("ignore", "", "comma-separated directories to ignore (appended to config)")
+	includeHidden := flag.Bool("include-hidden", false, "include dot-prefixed directories")
 	flag.Parse()
 
-	scanner := scan.NewDefaultScanner()
+	cfg := config.DefaultConfig()
 
-	tree, err := scanner.Scan(*root, *maxDepth)
+	if *configPath != "" {
+		fileCfg, err := config.Load(*configPath)
+		if err != nil {
+			log.Fatalf("load config: %v", err)
+		}
+		cfg = config.Merge(cfg, fileCfg)
+	}
+
+	if *rootFlag != "" {
+		cfg.Root = *rootFlag
+	}
+	if *maxDepthFlag >= 0 {
+		cfg.MaxDepth = *maxDepthFlag
+	}
+	if *formatFlag != "" {
+		cfg.Format = *formatFlag
+	}
+	if *ignoreFlag != "" {
+		cfg.IgnoreDirs = append(cfg.IgnoreDirs, parseList(*ignoreFlag)...)
+	}
+	if *includeHidden {
+		cfg.IncludeHidden = true
+	}
+
+	ignoreDirs := cfg.AllIgnoreDirs()
+
+	scanner := scan.NewDefaultScanner(ignoreDirs, cfg.IncludeHidden)
+
+	tree, err := scanner.Scan(cfg.Root, cfg.MaxDepth)
 	if err != nil {
 		log.Fatalf("scan error: %v", err)
 	}
 
-	// Initialize analyzers and scorer (stubs for now; to be filled per AGENT_TASKS.md)
 	gitAnalyzer := analyze.NewGitAnalyzer()
-	fsAnalyzer := analyze.NewFsAnalyzer()
-	langAnalyzer := analyze.NewLangAnalyzer()
+	fsAnalyzer := analyze.NewFsAnalyzer(ignoreDirs, cfg.IncludeHidden)
+	langAnalyzer := analyze.NewLangAnalyzer(ignoreDirs, cfg.IncludeHidden, cfg.ExtensionMapping())
 	analyzer := analyze.NewCompositeAnalyzer(gitAnalyzer, fsAnalyzer, langAnalyzer)
 	scorer := score.NewDefaultScorer()
 
@@ -37,7 +69,7 @@ func main() {
 	}
 
 	var r render.Renderer
-	switch *format {
+	switch cfg.Format {
 	case "tree":
 		r = render.NewTreeRenderer()
 	case "markdown":
@@ -45,7 +77,7 @@ func main() {
 	case "json":
 		r = render.NewJSONRenderer()
 	default:
-		fmt.Fprintf(os.Stderr, "unknown format %q (expected tree|markdown|json)\n", *format)
+		fmt.Fprintf(os.Stderr, "unknown format %q (expected tree|markdown|json)\n", cfg.Format)
 		os.Exit(1)
 	}
 
@@ -82,4 +114,20 @@ func annotateTree(root *scan.Node, analyzer analyze.Analyzer, scorer score.Score
 	}
 
 	return visit(root)
+}
+
+func parseList(input string) []string {
+	if input == "" {
+		return nil
+	}
+	parts := strings.Split(input, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		result = append(result, part)
+	}
+	return result
 }

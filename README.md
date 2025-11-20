@@ -87,8 +87,40 @@ CLI flags (v0):
   Root directory to scan.
 - `--max-depth` (int, default: 0 = unlimited)  
   Maximum directory depth to recurse.
-- `--format` (string: `tree|markdown|json`, default: `tree`)  
-  Output format.
+- `--format` (string: `tree|markdown|json`)  
+  Output format; defaults to whatever is set in config (tree by default).
+- `--ignore` (string)  
+  Comma-separated list of directories to skip (appended to config).
+- `--include-hidden` (bool)  
+  Include dot-prefixed directories instead of skipping them.
+- `--config` (string)  
+  Path to a JSON config file for advanced customization.
+
+
+## Configuration
+
+`proj-audit` loads defaults internally but can merge in a JSON config file:
+
+```json
+{
+  "root": "~/dev",
+  "maxDepth": 3,
+  "format": "markdown",
+  "ignoreDirs": ["tmp", "notes"],
+  "languages": {
+    "Haskell": {
+      "extensions": [".hs"],
+      "skipDirs": ["dist-newstyle"]
+    }
+  }
+}
+```
+
+Key points:
+
+- `ignoreDirs` entries are merged with the built-in list and affect the scanner and analyzers.
+- `languages` lets you extend or override language detection, including extra extensions or directories to skip for that ecosystem.
+- CLI flags always win over config values, so `proj-audit --format json` overrides whatever the file specifies.
 
 
 ## Architecture
@@ -186,4 +218,3 @@ proj-audit/
 ├── README.md
 └── AGENT_TASKS.md
 ```
-

@@ -10,27 +10,20 @@ import (
 )
 
 type LangAnalyzer struct {
-	ignoreDirs map[string]struct{}
+	ignoreDirs    map[string]struct{}
+	includeHidden bool
+	extToLang     map[string]string
 }
 
-func NewLangAnalyzer() *LangAnalyzer {
+func NewLangAnalyzer(ignoreDirs []string, includeHidden bool, extMap map[string]string) *LangAnalyzer {
+	mapping := normalizeExtensionMap(extMap)
+	if len(mapping) == 0 {
+		mapping = defaultExtensionMap()
+	}
 	return &LangAnalyzer{
-		ignoreDirs: map[string]struct{}{
-			".git":         {},
-			"node_modules": {},
-			"vendor":       {},
-			"bin":          {},
-			"target":       {},
-			".gocache":     {},
-			".cache":       {},
-			"dist":         {},
-			"build":        {},
-			"out":          {},
-			"venv":         {},
-			".venv":        {},
-			"__pycache__":  {},
-			".cargo":       {},
-		},
+		ignoreDirs:    makeIgnoreSet(ignoreDirs),
+		includeHidden: includeHidden,
+		extToLang:     mapping,
 	}
 }
 
@@ -48,7 +41,7 @@ func (l *LangAnalyzer) Analyze(path string) (model.ProjectMetrics, error) {
 			return nil
 		}
 
-		if lang := inferLanguage(d.Name()); lang != "" {
+		if lang := l.lookupLanguage(d.Name()); lang != "" {
 			languages[lang] = struct{}{}
 		}
 		return nil
@@ -76,33 +69,54 @@ func (l *LangAnalyzer) shouldSkipDir(name string) bool {
 	if name == "" {
 		return false
 	}
-	if strings.HasPrefix(name, ".") && name != ".git" && name != ".github" {
+	if !l.includeHidden && strings.HasPrefix(name, ".") && name != ".git" && name != ".github" {
 		return true
 	}
 	_, skip := l.ignoreDirs[name]
 	return skip
 }
 
-func inferLanguage(filename string) string {
+func (l *LangAnalyzer) lookupLanguage(filename string) string {
 	ext := strings.ToLower(filepath.Ext(filename))
-	switch ext {
-	case ".go":
-		return "Go"
-	case ".rs":
-		return "Rust"
-	case ".py":
-		return "Python"
-	case ".js":
-		return "JavaScript"
-	case ".ts":
-		return "TypeScript"
-	case ".java":
-		return "Java"
-	case ".cs":
-		return "C#"
-	case ".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hh":
-		return "C/C++"
-	default:
+	if ext == "" {
 		return ""
+	}
+	return l.extToLang[ext]
+}
+
+func normalizeExtensionMap(in map[string]string) map[string]string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(in))
+	for ext, lang := range in {
+		ext = strings.TrimSpace(ext)
+		if ext == "" || lang == "" {
+			continue
+		}
+		if !strings.HasPrefix(ext, ".") {
+			ext = "." + ext
+		}
+		out[strings.ToLower(ext)] = lang
+	}
+	return out
+}
+
+func defaultExtensionMap() map[string]string {
+	return map[string]string{
+		".go":   "Go",
+		".rs":   "Rust",
+		".py":   "Python",
+		".js":   "JavaScript",
+		".ts":   "TypeScript",
+		".java": "Java",
+		".cs":   "C#",
+		".c":    "C/C++",
+		".h":    "C/C++",
+		".cpp":  "C/C++",
+		".cc":   "C/C++",
+		".cxx":  "C/C++",
+		".hpp":  "C/C++",
+		".hh":   "C/C++",
 	}
 }
