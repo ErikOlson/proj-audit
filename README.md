@@ -93,13 +93,17 @@ CLI flags (v0):
   Comma-separated list of directories to skip (appended to config).
 - `--include-hidden` (bool)  
   Include dot-prefixed directories instead of skipping them.
+- `--languages` (string)  
+  Path to a YAML file describing languages, extensions, and directories to skip.
 - `--config` (string)  
   Path to a JSON config file for advanced customization.
 
 
 ## Configuration
 
-`proj-audit` loads defaults internally but can merge in a JSON config file:
+`proj-audit` loads defaults internally but can merge in a JSON config file plus a YAML language file.
+
+### General config (JSON)
 
 ```json
 {
@@ -107,20 +111,42 @@ CLI flags (v0):
   "maxDepth": 3,
   "format": "markdown",
   "ignoreDirs": ["tmp", "notes"],
-  "languages": {
-    "Haskell": {
-      "extensions": [".hs"],
-      "skipDirs": ["dist-newstyle"]
-    }
-  }
+  "languagesFile": "./languages.yaml"
 }
 ```
 
 Key points:
 
 - `ignoreDirs` entries are merged with the built-in list and affect the scanner and analyzers.
-- `languages` lets you extend or override language detection, including extra extensions or directories to skip for that ecosystem.
+- `languagesFile` points at a YAML document (see below) for language-specific rules. You can also add a small `languages` block inline if you prefer JSON.
 - CLI flags always win over config values, so `proj-audit --format json` overrides whatever the file specifies.
+
+### Language config (YAML)
+
+Languages, extensions, and per-language ignore directories live in a simple YAML format:
+
+```yaml
+Go:
+  extensions:
+    - .go
+  skipDirs:
+    - vendor
+    - bin
+Rust:
+  extensions:
+    - .rs
+  skipDirs:
+    - target
+    - .cargo
+"C#":
+  extensions:
+    - .cs
+  skipDirs:
+    - bin
+    - obj
+```
+
+Use `proj-audit --languages ./languages.yaml` or set `languagesFile` in your JSON config to load the file. Entries merge with the defaults embedded in `internal/config/languages.yaml`, so you only need to add new languages or override specific ones.
 
 
 ## Architecture

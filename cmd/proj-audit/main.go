@@ -21,6 +21,7 @@ func main() {
 	configPath := flag.String("config", "", "path to JSON config file")
 	ignoreFlag := flag.String("ignore", "", "comma-separated directories to ignore (appended to config)")
 	includeHidden := flag.Bool("include-hidden", false, "include dot-prefixed directories")
+	languagesFile := flag.String("languages", "", "path to a languages YAML file")
 	flag.Parse()
 
 	cfg := config.DefaultConfig()
@@ -48,6 +49,15 @@ func main() {
 	if *includeHidden {
 		cfg.IncludeHidden = true
 	}
+	if *languagesFile != "" {
+		cfg.LanguagesFile = *languagesFile
+	}
+
+	langs, err := cfg.ResolveLanguages()
+	if err != nil {
+		log.Fatalf("load languages: %v", err)
+	}
+	cfg.Languages = langs
 
 	ignoreDirs := cfg.AllIgnoreDirs()
 

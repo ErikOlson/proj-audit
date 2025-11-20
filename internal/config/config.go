@@ -19,6 +19,7 @@ type Config struct {
 	Format        string                    `json:"format"`
 	IgnoreDirs    []string                  `json:"ignoreDirs"`
 	IncludeHidden bool                      `json:"includeHidden"`
+	LanguagesFile string                    `json:"languagesFile"`
 	Languages     map[string]LanguageConfig `json:"languages"`
 }
 
@@ -62,13 +63,11 @@ func Merge(base Config, overrides Config) Config {
 	if overrides.IncludeHidden {
 		merged.IncludeHidden = true
 	}
+	if overrides.LanguagesFile != "" {
+		merged.LanguagesFile = overrides.LanguagesFile
+	}
 	if len(overrides.Languages) > 0 {
-		if merged.Languages == nil {
-			merged.Languages = make(map[string]LanguageConfig)
-		}
-		for name, lang := range overrides.Languages {
-			merged.Languages[name] = lang
-		}
+		merged.Languages = MergeLanguageMaps(merged.Languages, overrides.Languages)
 	}
 	return merged
 }
@@ -113,6 +112,21 @@ func (c Config) ExtensionMapping() map[string]string {
 		}
 	}
 	return mapping
+}
+
+func (c Config) ResolveLanguages() (map[string]LanguageConfig, error) {
+	langs := defaultLanguages()
+	if c.LanguagesFile != "" {
+		fileLangs, err := LoadLanguagesFile(c.LanguagesFile)
+		if err != nil {
+			return nil, err
+		}
+		langs = MergeLanguageMaps(langs, fileLangs)
+	}
+	if len(c.Languages) > 0 {
+		langs = MergeLanguageMaps(langs, c.Languages)
+	}
+	return langs, nil
 }
 
 func appendUnique(base []string, more []string) []string {
@@ -162,42 +176,5 @@ func defaultIgnoreDirs() []string {
 		".venv",
 		"__pycache__",
 		".cargo",
-	}
-}
-
-func defaultLanguages() map[string]LanguageConfig {
-	return map[string]LanguageConfig{
-		"Go": {
-			Extensions: []string{".go"},
-			SkipDirs:   []string{"vendor", "bin"},
-		},
-		"Rust": {
-			Extensions: []string{".rs"},
-			SkipDirs:   []string{"target", ".cargo"},
-		},
-		"Python": {
-			Extensions: []string{".py"},
-			SkipDirs:   []string{"__pycache__", ".venv", "venv"},
-		},
-		"JavaScript": {
-			Extensions: []string{".js"},
-			SkipDirs:   []string{"node_modules", "dist"},
-		},
-		"TypeScript": {
-			Extensions: []string{".ts"},
-			SkipDirs:   []string{"node_modules", "dist"},
-		},
-		"Java": {
-			Extensions: []string{".java"},
-			SkipDirs:   []string{"build", "out"},
-		},
-		"C#": {
-			Extensions: []string{".cs"},
-			SkipDirs:   []string{"bin", "obj"},
-		},
-		"C/C++": {
-			Extensions: []string{".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hh"},
-			SkipDirs:   []string{"build"},
-		},
 	}
 }

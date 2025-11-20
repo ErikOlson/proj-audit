@@ -1,0 +1,54 @@
+Go:
+  extensions:
+    - .go
+  skipDirs:
+    - vendor
+    - bin
+Rust:
+  extensions:
+    - .rs
+  skipDirs:
+    - target
+    - .cargo
+Python:
+  extensions:
+    - .py
+  skipDirs:
+    - __pycache__
+    - .venv
+    - venv
+JavaScript:
+  extensions:
+    - .js
+  skipDirs:
+    - node_modules
+    - dist
+TypeScript:
+  extensions:
+    - .ts
+  skipDirs:
+    - node_modules
+    - dist
+Java:
+  extensions:
+    - .java
+  skipDirs:
+    - build
+    - out
+"C#":
+  extensions:
+    - .cs
+  skipDirs:
+    - bin
+    - obj
+"C/C++":
+  extensions:
+    - .c
+    - .h
+    - .cpp
+    - .cc
+    - .cxx
+    - .hpp
+    - .hh
+  skipDirs:
+    - build
