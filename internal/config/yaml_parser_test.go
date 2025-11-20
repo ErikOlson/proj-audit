@@ -7,12 +7,12 @@ import (
 
 func TestParseYAMLLanguagesLike(t *testing.T) {
 	data := []byte(`
-		Go:
-		  extensions:
-			- .go
-		  skipDirs:
-			- vendor
-	`)
+Go:
+  extensions:
+    - .go
+  skipDirs:
+    - vendor
+`)
 
 	var out map[string]LanguageConfig
 	if err := decodeYAML(data, &out); err != nil {
@@ -28,12 +28,12 @@ func TestParseYAMLLanguagesLike(t *testing.T) {
 
 func TestParseYAMLSequenceOfMaps(t *testing.T) {
 	data := []byte(`
-		items:
-		  - min: 10
-			points: 5
-		  - min: 5
-			points: 2
-	`)
+items:
+  - min: 10
+    points: 5
+  - min: 5
+    points: 2
+`)
 
 	var out map[string][]map[string]int
 	if err := decodeYAML(data, &out); err != nil {
