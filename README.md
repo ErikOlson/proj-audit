@@ -161,7 +161,8 @@ Rust:
     - obj
 ```
 
-Use `proj-audit --languages ./languages.yaml` or set `languagesFile` in your JSON config to load the file. Entries merge with the defaults embedded in `internal/config/languages.yaml`, so you only need to add new languages or override specific ones.
+Use `proj-audit --languages ./languages.yaml` or set `languagesFile` in your JSON config to load the file. Entries merge with the defaults embedded in `internal/config/languages.yaml`, so you only need to add new languages or override specific ones.  
+See `internal/config/README.md` for a tour of the embedded YAML defaults and how to extend them.
 
 ### Scoring configuration
 
