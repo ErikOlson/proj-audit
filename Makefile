@@ -11,6 +11,9 @@ build:
 run: build
 	./$(BIN_DIR)/$(BINARY_NAME)
 
+run-dev: build
+	./$(BIN_DIR)/$(BINARY_NAME) --root ~/dev
+
 test:
 	go test ./...
 
